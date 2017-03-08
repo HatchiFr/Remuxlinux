@@ -62,22 +62,80 @@ if [ "$2" = "movie" ]
 	MPLSFILE="$(echo $DATA | grep -oP '([0-9]{5}.MPLS)')"
 	echo $MPLSFILE
 	
-	LOCATION="$(find $PLAYLISTPATH -iname $MPLSFILE)"
-	echo $LOCATION
+	LOCATION="$(find "$PLAYLISTPATH" -iname $MPLSFILE)"
 
-	echo $CLEANBLURAYNAME
-	#mkdir $REMUXPATH/$CLEANBLURAYNAME
+	mkdir -p $REMUXPATH/$CLEANBLURAYNAME
+
+	mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.mkv" $LOCATION
 fi
 
-exit 0
+#EPISODES 20 Min
+if [ "$2" = "episodes" ] && [ "$4" = "20" ]
+	then
+	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
+	BLURAYPATH="$(echo $BDINFO | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
+	BLURAYNAME="$(echo $BDINFO | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
 
+	#Cheack if the BlurayPath is good
+	checkdata
+	#Clear the BLURAYNAME (remove () and space)
+	cleanblurayname
+	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
+	
+	#Extract Episodes of 20min specific data
+	DATA="$(echo $BDINFO | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][8-9]|[2][0-5]):[0-9]{2})')"
 
+	#Extract MPLSFILES
+	MPLSFILE="$(echo $DATA | grep -oP '([0-9]{5}.MPLS)')"
 
+	mkdir -p $REMUXPATH/$CLEANBLURAYNAME
 
-i=0
-	for x in $DATA
+	#Create TAB and REMUX
+	i=1
+	for x in $MPLSFILE
 	do
-		TAB_ALL[$i]=$x
+		#For DEBUG
+		#TAB_MPLS[$i]=$x
+		#Stock location
+		TAB_LOCATION[$i]="$(find "$PLAYLISTPATH" -iname $x)"
+		mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.E$i.mkv" "${TAB_LOCATION[$i]}"
 		i=`expr $i + 1`
-		echo $x
 	done
+
+fi
+
+#EPISODES 40 Min
+if [ "$2" = "episodes" ] && [ "$4" = "40" ]
+	then
+	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
+	BLURAYPATH="$(echo $BDINFO | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
+	BLURAYNAME="$(echo $BDINFO | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
+
+	#Cheack if the BlurayPath is good
+	checkdata
+	#Clear the BLURAYNAME (remove () and space)
+	cleanblurayname
+	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
+	
+	#Extract Episodes of 40min specific data
+	DATA="$(echo $BDINFO | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][7-9]|[4][0-5]):[0-9]{2})')"
+
+	#Extract MPLSFILES
+	MPLSFILE="$(echo $DATA | grep -oP '([0-9]{5}.MPLS)')"
+
+	mkdir -p $REMUXPATH/$CLEANBLURAYNAME
+
+	#Create TAB and REMUX
+	i=1
+	for x in $MPLSFILE
+	do
+		#For DEBUG
+		#TAB_MPLS[$i]=$x
+		#Stock location
+		TAB_LOCATION[$i]="$(find "$PLAYLISTPATH" -iname $x)"
+		mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.E$i.mkv" "${TAB_LOCATION[$i]}"
+		i=`expr $i + 1`
+	done
+
+fi
+exit 0
