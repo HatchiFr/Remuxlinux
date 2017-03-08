@@ -9,14 +9,15 @@ All you need is in that little script !
 
 ##Description
 
-* Use a docker container to escape the need of mono.
+* It use a docker container to escape the need of installing mono.
 * Patched [BDInfoCLI-Lite](https://github.com/HatchiFr/BDInfoCLI) for easier use.
 * RegHex are used to do that job !
 * Full Path with no escape for space characters need double quote "".
-* Example of use : ./RemuxAutoScript.sh --type episodes --time 20 --folder "/home/hatchi/BluRay/Pokemon The Movie(1998)/"
+* Example of use : ./RemuxAutoScript.sh --type movie --time movie --folder "/home/hatchi/BluRay/Pokemon The Movie(1998)/"
 * Possible arguments --type episodes | movie  --time 20 | 40  movie  --folder "Full Path Of The Blu-ray Folder"
 * Change the variable REMUXPATH in the script to your Remux specific path.
 * Know Issues : BDInfo don't give you the possibility to check the presence of Bonus.
+* The episodes are rightly ordered from the Blu-Ray (VOL 01 or DISC1) but arn't for the Global Season Order (E20 - E21...).
 
 ##Requirements
 

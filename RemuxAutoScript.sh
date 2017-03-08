@@ -66,11 +66,20 @@ if [ "$2" = "movie" ]
 	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)')"
 	echo "$MPLSFILE"
 	
-	LOCATION="$(find "$PLAYLISTPATH" -iname "$MPLSFILE")"
+	#Create TAB and REMUX
+	i=1
+	for x in $MPLSFILE
+	do
+		#For DEBUG
+		#TAB_MPLS[$i]=$x
+		#Stock location
+		TAB_LOCATION[$i]="$(find "$PLAYLISTPATH" -iname "$x")"
+		i=$((i + 1))
+	done
 
 	mkdir -p "$REMUXPATH"/"$CLEANBLURAYNAME"
 
-	mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.mkv" "$LOCATION"
+	mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.E$i.mkv" "${TAB_LOCATION[1]}"
 fi
 
 #EPISODES 20 Min
