@@ -1,9 +1,13 @@
 #!/bin/bash
+#### Description: Auto Remux Script for Bluray
+#### CSV file must use : as separator
+#### Written by: Hatchi - on 03-2017
+
 REMUXPATH="/home/hatchi/test/"
 
 function usage
 {
-	echo -e "[*] ["$(date "+%T")"] Il manque un ou plusieurs arguments"
+	echo -e " Il manque un ou plusieurs arguments"
 	echo -e " $0 --type (episodes, movie) --time (20 or 40 for episodes and movie for movie) --folder (Full Path of the Bluray Folder)"
 	exit 0
 }
@@ -19,19 +23,19 @@ function checkdata
 
 function cleanblurayname
 {
-	CLEANBLURAYNAME="$(echo "$BLURAYNAME" | tr '[[:space:]]' '.')"
+	CLEANBLURAYNAME="$(echo "$BLURAYNAME" | tr '[:space:]' '.')"
 	CLEANBLURAYNAME="$(echo "$CLEANBLURAYNAME" | sed s'/[.]$//')"
-	CLEANBLURAYNAME="$(echo $CLEANBLURAYNAME | tr -d '(')"
-	CLEANBLURAYNAME="$(echo $CLEANBLURAYNAME | tr -d ')')"
+	CLEANBLURAYNAME="$(echo "$CLEANBLURAYNAME" | tr -d '(')"
+	CLEANBLURAYNAME="$(echo "$CLEANBLURAYNAME" | tr -d ')')"
 }
 
-#Verification du type et le nombre d'argument en conséquence
+#Check number of arguments
 if [ "$#" -ne 6 ]
     then
 	    usage
 fi
 
-#Verification des arguments
+#Check arguments
 if [ "$2" != "episodes" ] && [ "$2" != "movie" ] 
     then
     	echo -e "Bad argument for attribute type"
@@ -48,47 +52,47 @@ fi
 if [ "$2" = "movie" ]
 	then
 	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
-	BLURAYPATH="$(echo $BDINFO | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
-	BLURAYNAME="$(echo $BDINFO | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
+	BLURAYPATH="$(echo "$BDINFO" | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
+	BLURAYNAME="$(echo "$BDINFO" | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
 
-	#Cheack if the BlurayPath is good
+	#Check if the BlurayPath is good
 	checkdata
 	#Clear the BLURAYNAME (remove () and space)
 	cleanblurayname
 	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
 	
 	#Extract Movie specific data
-	DATA="$(echo $BDINFO | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0][1-3]:[0-9]{2}:[0-9]{2})')"
-	MPLSFILE="$(echo $DATA | grep -oP '([0-9]{5}.MPLS)')"
-	echo $MPLSFILE
+	DATA="$(echo "$BDINFO" | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0][1-3]:[0-9]{2}:[0-9]{2})')"
+	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)')"
+	echo "$MPLSFILE"
 	
-	LOCATION="$(find "$PLAYLISTPATH" -iname $MPLSFILE)"
+	LOCATION="$(find "$PLAYLISTPATH" -iname "$MPLSFILE")"
 
-	mkdir -p $REMUXPATH/$CLEANBLURAYNAME
+	mkdir -p "$REMUXPATH"/"$CLEANBLURAYNAME"
 
-	mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.mkv" $LOCATION
+	mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.mkv" "$LOCATION"
 fi
 
 #EPISODES 20 Min
 if [ "$2" = "episodes" ] && [ "$4" = "20" ]
 	then
 	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
-	BLURAYPATH="$(echo $BDINFO | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
-	BLURAYNAME="$(echo $BDINFO | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
+	BLURAYPATH="$(echo "$BDINFO" | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
+	BLURAYNAME="$(echo "$BDINFO" | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
 
-	#Cheack if the BlurayPath is good
+	#Check if the BlurayPath is good
 	checkdata
 	#Clear the BLURAYNAME (remove () and space)
 	cleanblurayname
 	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
 	
 	#Extract Episodes of 20min specific data
-	DATA="$(echo $BDINFO | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][8-9]|[2][0-5]):[0-9]{2})')"
+	DATA="$(echo "$BDINFO" | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][9]|[2][0-5]):[0-9]{2})')"
 
 	#Extract MPLSFILES
-	MPLSFILE="$(echo $DATA | grep -oP '([0-9]{5}.MPLS)')"
+	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)')"
 
-	mkdir -p $REMUXPATH/$CLEANBLURAYNAME
+	mkdir -p "$REMUXPATH"/"$CLEANBLURAYNAME"
 
 	#Create TAB and REMUX
 	i=1
@@ -97,33 +101,32 @@ if [ "$2" = "episodes" ] && [ "$4" = "20" ]
 		#For DEBUG
 		#TAB_MPLS[$i]=$x
 		#Stock location
-		TAB_LOCATION[$i]="$(find "$PLAYLISTPATH" -iname $x)"
+		TAB_LOCATION[$i]="$(find "$PLAYLISTPATH" -iname "$x")"
 		mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.E$i.mkv" "${TAB_LOCATION[$i]}"
-		i=`expr $i + 1`
+		i=$((i + 1))
 	done
-
 fi
 
 #EPISODES 40 Min
 if [ "$2" = "episodes" ] && [ "$4" = "40" ]
 	then
 	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
-	BLURAYPATH="$(echo $BDINFO | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
-	BLURAYNAME="$(echo $BDINFO | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
+	BLURAYPATH="$(echo "$BDINFO" | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
+	BLURAYNAME="$(echo "$BDINFO" | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
 
-	#Cheack if the BlurayPath is good
+	#Check if the BlurayPath is good
 	checkdata
 	#Clear the BLURAYNAME (remove () and space)
 	cleanblurayname
 	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
 	
 	#Extract Episodes of 40min specific data
-	DATA="$(echo $BDINFO | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][7-9]|[4][0-5]):[0-9]{2})')"
+	DATA="$(echo "$BDINFO" | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][8-9]|[4][0-5]):[0-9]{2})')"
 
 	#Extract MPLSFILES
-	MPLSFILE="$(echo $DATA | grep -oP '([0-9]{5}.MPLS)')"
+	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)')"
 
-	mkdir -p $REMUXPATH/$CLEANBLURAYNAME
+	mkdir -p "$REMUXPATH"/"$CLEANBLURAYNAME"
 
 	#Create TAB and REMUX
 	i=1
@@ -132,10 +135,10 @@ if [ "$2" = "episodes" ] && [ "$4" = "40" ]
 		#For DEBUG
 		#TAB_MPLS[$i]=$x
 		#Stock location
-		TAB_LOCATION[$i]="$(find "$PLAYLISTPATH" -iname $x)"
+		TAB_LOCATION[$i]="$(find "$PLAYLISTPATH" -iname "$x")"
 		mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.E$i.mkv" "${TAB_LOCATION[$i]}"
-		i=`expr $i + 1`
+		i=$((i + 1))
 	done
-
 fi
+
 exit 0
