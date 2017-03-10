@@ -79,7 +79,8 @@ if [ "$2" = "movie" ]
 
 	mkdir -p "$REMUXPATH"/"$CLEANBLURAYNAME"
 
-	mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.E$i.mkv" "${TAB_LOCATION[1]}"
+	#Remux just the first MPLS that correpsond to movie
+	mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.mkv" "${TAB_LOCATION[1]}"
 fi
 
 #EPISODES 20 Min
