@@ -7,7 +7,7 @@ REMUXPATH="/home/hatchi/test/"
 
 function usage
 {
-	echo -e " Il manque un ou plusieurs arguments"
+	echo -e " One or more arguments are missing"
 	echo -e " $0 --type (episodes, movie) --time (20 or 40 for episodes and movie for movie) --folder (Full Path of the Bluray Folder)"
 	exit 0
 }
