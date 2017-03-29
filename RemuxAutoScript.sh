@@ -8,7 +8,7 @@ REMUXPATH="/home/hatchi/test/"
 function usage
 {
 	echo -e " One or more arguments are missing"
-	echo -e " $0 --type (episodes, movie) --time (20 or 40 for episodes and movie for movie) --folder (Full Path of the Bluray Folder)"
+	echo -e " $0 --type (episodes, movie) --time (20, 30, 40, 50 or 60 for episodes and movie for movie) --folder (Full Path of the Bluray Folder)"
 	exit 0
 }
 
@@ -16,7 +16,7 @@ function checkdata
 {
 	if [ ! -d "$BLURAYPATH" ]
 		then
-			echo -e "The path or the Bluray is incorrect"
+			echo -e "The path of the Bluray is incorrect"
 			exit 0
 	fi
 }
@@ -27,6 +27,18 @@ function cleanblurayname
 	CLEANBLURAYNAME="$(echo "$CLEANBLURAYNAME" | sed s'/[.]$//')"
 	CLEANBLURAYNAME="$(echo "$CLEANBLURAYNAME" | tr -d '(')"
 	CLEANBLURAYNAME="$(echo "$CLEANBLURAYNAME" | tr -d ')')"
+}
+
+#Remove duplicated episodes (Fuc**** playlist creator)
+function deduplication
+{
+	SIZE="$(echo "$BDINFO" |  sed '/Disc Size/d' |  grep -oP '(([0-9]{2}|[0-9]{1}),[0-9]{3},[0-9]{3},[0-9]{3})' | sed -n 'G; s/\n/&&/; /^\([ -~]*\n\).*\n\1/d; s/\n//; h; P')"
+	for n in $SIZE
+		do
+		DEDUPLINE="$(echo "$BDINFO" | grep  $n | head -n1)"
+		DEDUPBDINFO="$DEDUPBDINFO\n$DEDUPLINE"
+	done
+	BDINFO="$(echo -e "$DEDUPBDINFO")"
 }
 
 #Check number of arguments
@@ -42,7 +54,7 @@ if [ "$2" != "episodes" ] && [ "$2" != "movie" ]
     exit 0
 fi
 
-if [ "$4" != "20" ] && [ "$4" != "40" ] && [ "$4" != "movie" ] 
+if [ "$4" != "20" ] && [ "$4" != "30" ] && [ "$4" != "40" ] && [ "$4" != "50" ] && [ "$4" != "60" ] && [ "$4" != "movie" ] 
     then
     	echo -e "Bad argument for attribute time"
     exit 0
@@ -83,9 +95,27 @@ if [ "$2" = "movie" ]
 	mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.mkv" "${TAB_LOCATION[1]}"
 fi
 
-#EPISODES 20 Min
-if [ "$2" = "episodes" ] && [ "$4" = "20" ]
+#EPISODES
+if [ "$2" = "episodes" ]
 	then
+
+	if [ "$4" = "20" ]
+		then
+		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][6-9]|[2][0-7]):[0-9]{2})'
+	elif [ "$4" = "30" ]
+		then
+		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([2][7-9]|[3][0-6]):[0-9]{2})'
+	elif [ "$4" = "40" ]
+		then
+		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][6-9]|[4][0-8]):[0-9]{2})'
+	elif [ "$4" = "50" ] || [ "$4" = "60" ]
+		then
+		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+(([0]{2}:([4][7-9]|[5][0-9]):[0-9]{2})|([0][1]:([0-3][0-9]:[0-9]{2})))'
+	else
+		echo "Bad argument for attribute time"
+    	exit 0
+	fi
+
 	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
 	BLURAYPATH="$(echo "$BDINFO" | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
 	BLURAYNAME="$(echo "$BDINFO" | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
@@ -96,42 +126,14 @@ if [ "$2" = "episodes" ] && [ "$4" = "20" ]
 	cleanblurayname
 	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
 	
-	#Extract Episodes of 20min specific data
-	DATA="$(echo "$BDINFO" | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][9]|[2][0-5]):[0-9]{2})')"
+	deduplication
 
-	#Extract MPLSFILES
-	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)')"
-
-	mkdir -p "$REMUXPATH"/"$CLEANBLURAYNAME"
-
-	#Create TAB and REMUX
-	i=1
-	for x in $MPLSFILE
-	do
-		#For DEBUG
-		#TAB_MPLS[$i]=$x
-		#Stock location
-		TAB_LOCATION[$i]="$(find "$PLAYLISTPATH" -iname "$x")"
-		mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.E$i.mkv" "${TAB_LOCATION[$i]}"
-		i=$((i + 1))
-	done
-fi
-
-#EPISODES 40 Min
-if [ "$2" = "episodes" ] && [ "$4" = "40" ]
-	then
-	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
-	BLURAYPATH="$(echo "$BDINFO" | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
-	BLURAYNAME="$(echo "$BDINFO" | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
-
-	#Check if the BlurayPath is good
-	checkdata
-	#Clear the BLURAYNAME (remove () and space)
-	cleanblurayname
-	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
-	
-	#Extract Episodes of 40min specific data
-	DATA="$(echo "$BDINFO" | grep -oP '([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][8-9]|[4][0-5]):[0-9]{2})')"
+	#Extract Episodes specific time
+	DATA="$(echo "$BDINFO" | grep -oP "$REGHEX")"
+	echo "DATA"
+	echo "$DATA"
+	echo "BDINFO"
+	echo "$BDINFO"
 
 	#Extract MPLSFILES
 	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)')"
