@@ -7,7 +7,7 @@ All you need is in that little script !
 * Make Remux for you without the need to know the good order for your episodes
 * Easy to use it, scripted with love ;) 
 
-##Description
+## Description
 
 * Everyone knows it is exhausting to make Remux manually for a whole season. 
 * With my script and docker image you can automatically make the remux from the Blu-Ray, works for 20/40 min episodes and for movies.
@@ -20,20 +20,20 @@ All you need is in that little script !
 * Possible arguments --type episodes | movie  --time 20 | 40  movie  --folder "Full Path Of The Blu-ray Folder"
 * Know Issues : BDInfo don't give you the possibility to check the presence of Bonus.
 
-##Requirements
+## Requirements
 
 * Docker.
 * MkvToolnix.
 * Hands and Internet.
 
-##Installation
+## Installation
 
 * Download the Docker Image : docker pull hatchi/bdinfocli
 * Download the script : wget https://raw.githubusercontent.com/HatchiFr/Remuxlinux/master/RemuxAutoScript.sh
 * Give good authorization : chmod u+x RemuxAutoScript.sh
 * Change the variable REMUXPATH in the script to your Remux storage specific path.
 
-##ToDo
+## ToDo
 
 * Add Iso Support
 * Check for duplicat m2ts call in playlist
