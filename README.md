@@ -1,4 +1,4 @@
-#Remuxlinux
+# Remuxlinux
 
 All you need is in that little script !
 
@@ -16,8 +16,8 @@ All you need is in that little script !
 * Patched [BDInfoCLI-Lite](https://github.com/HatchiFr/BDInfoCLI) for easier use.
 * RegHex are used to do that job !
 * Full Path with no escape for space characters need double quote "".
-* Example of use : ./RemuxAutoScript.sh --type movie --time movie --folder "/home/hatchi/BluRay/Pokemon The Movie(1998)/"
-* Possible arguments --type episodes | movie  --time 20 | 40  movie  --folder "Full Path Of The Blu-ray Folder"
+* Example of use : ./RemuxAutoScript.sh --type movie --time movie --folder "/home/hatchi/BluRay/Some Movie/"
+* Possible arguments --type episodes | movie  --time 20 | 30 | 40 | 50 | 60 | movie  --folder "Full Path Of The Blu-ray Folder"
 * Know Issues : BDInfo don't give you the possibility to check the presence of Bonus.
 
 ## Requirements
