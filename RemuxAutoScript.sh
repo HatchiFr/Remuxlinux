@@ -8,7 +8,7 @@ REMUXPATH="/home/hatchi/test/"
 function usage
 {
 	echo -e " One or more arguments are missing"
-	echo -e " $0 --type (episodes, movie) --time (20, 30, 40, 50 or 60 for episodes and movie for movie) --folder (Full Path of the Bluray Folder)"
+	echo -e " $0 --type (episodes, movie, debug) --time (20, 30, 40, 50 or 60 for episodes and movie for movie) --folder (Full Path of the Bluray Folder)"
 	exit 0
 }
 
@@ -48,7 +48,7 @@ if [ "$#" -ne 6 ]
 fi
 
 #Check arguments
-if [ "$2" != "episodes" ] && [ "$2" != "movie" ] 
+if [ "$2" != "episodes" ] && [ "$2" != "movie" ] && [ "$2" != "debug" ] 
     then
     	echo -e "Bad argument for attribute type"
     exit 0
@@ -130,10 +130,6 @@ if [ "$2" = "episodes" ]
 
 	#Extract Episodes specific time
 	DATA="$(echo "$BDINFO" | grep -oP "$REGHEX")"
-	echo "DATA"
-	echo "$DATA"
-	echo "BDINFO"
-	echo "$BDINFO"
 
 	#Extract MPLSFILES
 	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)')"
@@ -151,6 +147,52 @@ if [ "$2" = "episodes" ]
 		mkvmerge -o "$REMUXPATH/$CLEANBLURAYNAME/$CLEANBLURAYNAME.E$i.mkv" "${TAB_LOCATION[$i]}"
 		i=$((i + 1))
 	done
+fi
+
+if [ "$2" = "debug" ]
+	then
+
+	if [ "$4" = "20" ]
+		then
+		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][6-9]|[2][0-7]):[0-9]{2})'
+	elif [ "$4" = "30" ]
+		then
+		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([2][7-9]|[3][0-6]):[0-9]{2})'
+	elif [ "$4" = "40" ]
+		then
+		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][6-9]|[4][0-8]):[0-9]{2})'
+	elif [ "$4" = "50" ] || [ "$4" = "60" ]
+		then
+		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+(([0]{2}:([4][7-9]|[5][0-9]):[0-9]{2})|([0][1]:([0-3][0-9]:[0-9]{2})))'
+	else
+		echo "Bad argument for attribute time"
+    	exit 0
+	fi
+
+	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
+	BLURAYPATH="$(echo "$BDINFO" | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
+	BLURAYNAME="$(echo "$BDINFO" | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
+
+	#Check if the BlurayPath is good
+	checkdata
+	#Clear the BLURAYNAME (remove () and space)
+	cleanblurayname
+	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
+	
+	deduplication
+
+	#Extract Episodes specific time
+	DATA="$(echo "$BDINFO" | grep -oP "$REGHEX")"
+	echo "BDINFO :"
+	echo "$BDINFO"
+	echo ""
+	echo "SELECTED TIME : $4"
+	echo ""
+	echo "SELECTED MPLS FILES WITH REGHEX :"
+	echo ""
+	echo "$DATA"
+	echo ""
+	
 fi
 
 exit 0
