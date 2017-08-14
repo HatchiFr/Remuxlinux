@@ -38,7 +38,7 @@ function deduplication
 		DEDUPLINE="$(echo "$BDINFO" | grep  $n | head -n1)"
 		DEDUPBDINFO="$DEDUPBDINFO\n$DEDUPLINE"
 	done
-	BDINFO="$(echo -e "$DEDUPBDINFO")"
+	BDINFO="$(echo -e "$DEDUPBDINFO" | uniq)"
 }
 
 #Check number of arguments
