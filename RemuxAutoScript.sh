@@ -1,6 +1,5 @@
 #!/bin/bash
 #### Description: Auto Remux Script for Bluray
-#### CSV file must use : as separator
 #### Written by: Hatchi - on 03-2017
 
 REMUXPATH="/home/hatchi/test/"
