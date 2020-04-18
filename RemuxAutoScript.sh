@@ -1,8 +1,11 @@
 #!/bin/bash
 #### Description: Auto Remux Script for Bluray
+#### CSV file must use : as separator
 #### Written by: Hatchi - on 03-2017
+#### Last Update : Hatchi - on 04-2020
 
-REMUXPATH="/home/hatchi/test/"
+REMUXPATH="/home/hatchi/scripts/Remux-Auto/result/"
+
 
 function usage
 {
@@ -100,16 +103,16 @@ if [ "$2" = "episodes" ]
 
 	if [ "$4" = "20" ]
 		then
-		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][6-9]|[2][0-7]):[0-9]{2})'
+		REGEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][6-9]|[2][0-7]):[0-9]{2})'
 	elif [ "$4" = "30" ]
 		then
-		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([2][7-9]|[3][0-6]):[0-9]{2})'
+		REGEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([2][7-9]|[3][0-6]):[0-9]{2})'
 	elif [ "$4" = "40" ]
 		then
-		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][6-9]|[4][0-8]):[0-9]{2})'
+		REGEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][6-9]|[4][0-8]):[0-9]{2})'
 	elif [ "$4" = "50" ] || [ "$4" = "60" ]
 		then
-		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+(([0]{2}:([4][7-9]|[5][0-9]):[0-9]{2})|([0][1]:([0-3][0-9]:[0-9]{2})))'
+		REGEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+(([0]{2}:([4][7-9]|[5][0-9]):[0-9]{2})|([0][1]:([0-3][0-9]:[0-9]{2})))'
 	else
 		echo "Bad argument for attribute time"
     	exit 0
@@ -124,20 +127,74 @@ if [ "$2" = "episodes" ]
 	#Clear the BLURAYNAME (remove () and space)
 	cleanblurayname
 	PLAYLISTPATH="$BLURAYPATH/PLAYLIST/"
-	
-	deduplication
 
 	#Extract Episodes specific time
-	DATA="$(echo "$BDINFO" | grep -oP "$REGHEX")"
+	DATA="$(echo "$BDINFO" | grep -oP "$REGEX")"
 
 	#Extract MPLSFILES
-	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)')"
+	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)' | sort -n)"
 
 	mkdir -p "$REMUXPATH"/"$CLEANBLURAYNAME"
 
-	#Create TAB and REMUX
-	i=1
+	i=0
 	for x in $MPLSFILE
+	do
+		#Stock location
+		MPLS_LOCATION="$(find "$PLAYLISTPATH" -iname "$x")"
+		#Register informations
+		echo "Analysing M2TS List for : $x"
+		M2TS_TAB_[$i]="$(mediainfo "$MPLS_LOCATION" | grep -oP '([0-9]{5}.m2ts)' | sort -n | uniq)"
+		MEDIAINFO_TAB_[$i]="$(mediainfo "$MPLS_LOCATION")"
+	i=$((i + 1))
+	done
+
+	DUPLICATED="0"
+	#Array FINAL_MPLSFILE counter
+	a=0
+	#Compare Variable to build final list
+	i=0
+	for x in $MPLSFILE
+	do
+	    #Compare each MPLS information with others to determine duplicate M2TS source
+		j=0
+		for y in $MPLSFILE
+		do
+		    if [[ "${M2TS_TAB_[$j]}" =~ "${M2TS_TAB_[$i]}" && "${M2TS_TAB_[$j]}" != "${M2TS_TAB_[$i]}" ]]
+			then
+				DUPLICATED="1"
+				if [ "${#MEDIAINFO_TAB_[$i]}" -lt "${#MEDIAINFO_TAB_[$j]}" ]
+				then
+					FINAL_MPLSFILE[$a]=$y
+			    fi
+
+				if [ "${#M2TS_TAB_[$i]}" -lt "${#M2TS_TAB_[$j]}" ] && [ "${#MEDIAINFO_TAB_[$i]}" -le "${#MEDIAINFO_TAB_[$j]}" ]
+				then
+					FINAL_MPLSFILE[$a]=$y
+			    fi
+			fi
+			j=$((j + 1))
+		done
+
+		if [ "${FINAL_MPLSFILE[$a]}" ]
+		then
+		   	a=$((a + 1))
+		elif [ "$DUPLICATED" -eq "0" ]
+		then
+			FINAL_MPLSFILE[$a]=$x
+			a=$((a + 1))
+		fi
+		i=$((i + 1))
+	done
+
+	echo "FINAL LIST :"
+	for i in "${FINAL_MPLSFILE[@]}"
+	do
+	    echo "$i"
+	done
+
+	#Create TAB and REMUX
+	i=0
+	for x in "${FINAL_MPLSFILE[@]}"
 	do
 		#For DEBUG
 		#TAB_MPLS[$i]=$x
@@ -153,16 +210,16 @@ if [ "$2" = "debug" ]
 
 	if [ "$4" = "20" ]
 		then
-		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][6-9]|[2][0-7]):[0-9]{2})'
+		REGEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([1][6-9]|[2][0-7]):[0-9]{2})'
 	elif [ "$4" = "30" ]
 		then
-		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([2][7-9]|[3][0-6]):[0-9]{2})'
+		REGEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([2][7-9]|[3][0-6]):[0-9]{2})'
 	elif [ "$4" = "40" ]
 		then
-		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][6-9]|[4][0-8]):[0-9]{2})'
+		REGEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+([0]{2}:([3][6-9]|[4][0-8]):[0-9]{2})'
 	elif [ "$4" = "50" ] || [ "$4" = "60" ]
 		then
-		REGHEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+(([0]{2}:([4][7-9]|[5][0-9]):[0-9]{2})|([0][1]:([0-3][0-9]:[0-9]{2})))'
+		REGEX='([0-9]{1})[ ]+([0-9]{5}.MPLS)[ ]+(([0]{2}:([4][7-9]|[5][0-9]):[0-9]{2})|([0][1]:([0-3][0-9]:[0-9]{2})))'
 	else
 		echo "Bad argument for attribute time"
     	exit 0
@@ -171,6 +228,7 @@ if [ "$2" = "debug" ]
 	BDINFO="$(docker run --rm -v "$6":"$6" hatchi/bdinfocli "$6" /tmp/)"
 	BLURAYPATH="$(echo "$BDINFO" | grep -oP '(\/[A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\/BDMV)')"
 	BLURAYNAME="$(echo "$BDINFO" | grep -oP '(\()+([A-z0-9,.;&_ \-\[\]\(\)\{\}]*)+(\))')"
+
 
 	#Check if the BlurayPath is good
 	checkdata
@@ -181,17 +239,77 @@ if [ "$2" = "debug" ]
 	deduplication
 
 	#Extract Episodes specific time
-	DATA="$(echo "$BDINFO" | grep -oP "$REGHEX")"
+	DATA="$(echo "$BDINFO" | grep -oP "$REGEX")"
+	#Extract MPLSFILES
+	MPLSFILE="$(echo "$DATA" | grep -oP '([0-9]{5}.MPLS)' | sort -n)"
 	echo "BDINFO :"
 	echo "$BDINFO"
 	echo ""
 	echo "SELECTED TIME : $4"
 	echo ""
-	echo "SELECTED MPLS FILES WITH REGHEX :"
+	echo "SELECTED MPLS FILES WITH REGEX :"
 	echo ""
 	echo "$DATA"
 	echo ""
-	
-fi
+	echo "MPLSFILES NAMES :"
+	echo ""
+	echo "$MPLSFILE"
+	echo ""
+	#Analyse mediainfo for each MPLS File
+	i=0
+	for x in $MPLSFILE
+	do
+		#Stock location
+		MPLS_LOCATION="$(find "$PLAYLISTPATH" -iname "$x")"
+		#Register informations
+		echo "Analysing M2TS List for : $x"
+		M2TS_TAB_[$i]="$(mediainfo "$MPLS_LOCATION" | grep -oP '([0-9]{5}.m2ts)' | sort -n | uniq)"
+		MEDIAINFO_TAB_[$i]="$(mediainfo "$MPLS_LOCATION")"
+	i=$((i + 1))
+	done
 
+	DUPLICATED="0"
+	#Array FINAL_MPLSFILE counter
+	a=0
+	#Compare Variable to build final list
+	i=0
+	for x in $MPLSFILE
+	do
+	    #Compare each MPLS information with others to determine duplicate M2TS source
+		j=0
+		for y in $MPLSFILE
+		do
+		    if [[ "${M2TS_TAB_[$j]}" =~ "${M2TS_TAB_[$i]}" && "${M2TS_TAB_[$j]}" != "${M2TS_TAB_[$i]}" ]]
+			then
+				DUPLICATED="1"
+				if [ "${#MEDIAINFO_TAB_[$i]}" -lt "${#MEDIAINFO_TAB_[$j]}" ]
+				then
+					FINAL_MPLSFILE[$a]=$y
+			    fi
+
+				if [ "${#M2TS_TAB_[$i]}" -lt "${#M2TS_TAB_[$j]}" ] && [ "${#MEDIAINFO_TAB_[$i]}" -le "${#MEDIAINFO_TAB_[$j]}" ]
+				then
+					FINAL_MPLSFILE[$a]=$y
+			    fi
+			fi
+			j=$((j + 1))
+		done
+
+		if [ "${FINAL_MPLSFILE[$a]}" ]
+		then
+		   	a=$((a + 1))
+		elif [ "$DUPLICATED" -eq "0" ]
+		then
+			FINAL_MPLSFILE[$a]=$x
+			a=$((a + 1))
+		fi
+		i=$((i + 1))
+	done
+
+	echo "FINAL LIST :"
+	for i in "${FINAL_MPLSFILE[@]}"
+	do
+	    echo "$i"
+	done
+fi
 exit 0
